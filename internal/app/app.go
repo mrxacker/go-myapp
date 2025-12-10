@@ -10,7 +10,12 @@ import (
 )
 
 func Run(ctx context.Context) error {
-	_, err := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	_, err = config.ConnectDB(cfg)
 	if err != nil {
 		return err
 	}

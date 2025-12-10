@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	_ "github.com/lib/pq"
+
 	"github.com/joho/godotenv"
 )
 
@@ -41,7 +43,7 @@ func Load() (*Config, error) {
 
 func ConnectDB(cfg *Config) (*sql.DB, error) {
 	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%v/%s?sslmode=disable",
 		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName,
 	)
 
