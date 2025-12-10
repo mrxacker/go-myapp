@@ -1,3 +1,8 @@
+APP_NAME := myApp
+BIN_DIR := bin
+COMPOSE_FILE=docker-compose.yml
+ENV_FILE=.env
+
 .PHONY: run build test clean proto
 
 proto:
@@ -16,3 +21,9 @@ test:
 
 clean:
 	rm -rf bin/ api/
+
+docker-up:
+	docker compose -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d --build
+
+docker-down:
+	docker compose -f $(COMPOSE_FILE) --env-file $(ENV_FILE) down -v
