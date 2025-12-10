@@ -34,3 +34,12 @@ type loggerFmt interface {
 	// Fatalf logs at Fatal log level using fmt formatter
 	Fatalf(format string, args ...interface{})
 }
+
+var defaultLogger Logger
+
+func Initialize(logger Logger) {
+	defaultLogger = logger
+}
+func Get() Logger {
+	return defaultLogger
+}

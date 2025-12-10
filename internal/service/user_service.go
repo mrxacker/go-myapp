@@ -7,24 +7,22 @@ import (
 )
 
 type UserService struct {
-	repo   repository.UserRepository
-	logger logger.Logger
+	repo repository.UserRepository
 }
 
-func NewUserService(repo repository.UserRepository, logger logger.Logger) *UserService {
+func NewUserService(repo repository.UserRepository) *UserService {
 	return &UserService{
-		repo:   repo,
-		logger: logger,
+		repo: repo,
 	}
 }
 
 func (s *UserService) GetUser(id models.UserID) (*models.User, error) {
-	s.logger.Debugf("Service: getting user, %v", id)
+	logger.Get().Debugf("Service: getting user, %v", id)
 	return s.repo.GetUserByID(id)
 }
 
 func (s *UserService) CreateUser(username, email string) (*models.User, error) {
-	s.logger.Debugf("Service: creating user, %v, %v", username, email)
+	logger.Get().Debugf("Service: creating user, %v, %v", username, email)
 	user := &models.User{
 		Username: username,
 		Email:    email,

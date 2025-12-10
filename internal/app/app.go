@@ -2,10 +2,14 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/mrxacker/go-myapp/internal/config"
+	"github.com/mrxacker/go-myapp/internal/repository/postgres"
+	"github.com/mrxacker/go-myapp/internal/server"
+	"github.com/mrxacker/go-myapp/internal/service"
+	"github.com/mrxacker/go-myapp/pkg/logger"
 	"github.com/mrxacker/go-myapp/pkg/logger/zap"
 )
 
@@ -15,26 +19,41 @@ func Run(ctx context.Context) error {
 		return err
 	}
 
-	_, err = config.ConnectDB(cfg)
+	db, err := config.ConnectDB(cfg)
 	if err != nil {
 		return err
 	}
 
-	logger, cleanup, err := zap.NewLogger()
+	zapLogger, err := zap.NewZapLogger(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing logger: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
-	defer cleanup()
+	logger.Initialize(zapLogger)
+	err = zapLogger.Sync()
+	if err != nil {
+		return fmt.Errorf("failed to sync logger: %w", err)
+	}
 
-	logger.Info("Starting application")
+	logger.Get().Info("Starting application")
+	if err := runServers(ctx, cfg, db); err != nil {
+		logger.Get().Error("Failed to run servers", logger.Error(err))
+		return err
+	}
 
 	return nil
 }
 
-func runServers(ctx context.Context) error {
+func runServers(ctx context.Context, cfg *config.Config, db *sql.DB) error {
+	userRepository := postgres.NewPostgresUserRepository(db)
+	userService := service.NewUserService(userRepository)
 
-	// Placeholder for server initialization and running logic
+	httpServer := server.New(cfg, userService)
+	go func() {
+		logger.Get().Info("HTTP server starting", logger.Int("port", cfg.HTTPPort))
+		if err := httpServer.Start(); err != nil {
+			logger.Get().Fatal("HTTP server failed", logger.Error(err))
+		}
+	}()
 	return nil
 }

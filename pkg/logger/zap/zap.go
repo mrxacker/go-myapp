@@ -3,38 +3,37 @@ package zap
 import (
 	"fmt"
 
+	"github.com/mrxacker/go-myapp/internal/config"
 	log "github.com/mrxacker/go-myapp/pkg/logger"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type ZapLogger struct {
 	L *zap.Logger
 }
 
-func NewLogger() (log.Logger, func(), error) {
-	cfg := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development:      false,
-		Encoding:         "json",                            // or "console"
-		OutputPaths:      []string{"stdout", "./app.log"},   // write to console + file
-		ErrorOutputPaths: []string{"stderr", "./error.log"}, // errors to separate file
-		EncoderConfig:    zap.NewProductionEncoderConfig(),
+func NewZapLogger(cfg *config.Config) (*ZapLogger, error) {
+	var zapCfg zap.Config
+
+	if cfg.Environment == "production" {
+		zapCfg = zap.NewProductionConfig()
+		zapCfg.EncoderConfig.TimeKey = "timestamp"
+		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	} else {
+		zapCfg = zap.NewDevelopmentConfig()
+		zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 
-	z, err := cfg.Build()
+	zapCfg.OutputPaths = []string{"stdout", "./app.log"}
+	zapCfg.ErrorOutputPaths = []string{"stderr", "./error.log"}
+
+	zapLogger, err := zapCfg.Build(zap.AddCallerSkip(1))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	l := &ZapLogger{
-		L: z,
-	}
-
-	cleanup := func() {
-		_ = l.L.Sync()
-	}
-
-	return l, cleanup, nil
+	return &ZapLogger{L: zapLogger}, nil
 }
 
 func (l *ZapLogger) Trace(msg string, fields ...log.Field) {
@@ -124,4 +123,9 @@ func (l *ZapLogger) Fatalf(msg string, args ...interface{}) {
 		ce.Message = fmt.Sprintf(msg, args...)
 		ce.Write()
 	}
+}
+
+// Sync flushes any buffered log entries
+func (l *ZapLogger) Sync() error {
+	return l.Sync()
 }
